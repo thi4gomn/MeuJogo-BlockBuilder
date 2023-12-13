@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Jogo Tetris</title>
+    <style>
+        /* Estilos para o corpo da página */
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #000000; /* Plano de fundo preto */
+            color: #00FF00; /* Letra na cor verde */
+        }
+        /* Estilos para o tabuleiro do jogo */
+        #game-board {
+            position: relative;
+            height: 600px;
+            width: 300px;
+            border: 1px solid #00FF00; /* Linha do tabuleiro na cor verde */
+        }
+        /* Estilos para os blocos do jogo */
+        .block {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+        }
+        /* Estilos para o elemento de pontuação */
+        #score {
+            position: absolute;
+            right: 200px;
+            font-size: 2em;
+        }
+        /* Estilos para o elemento de fim de jogo */
+        #end-game {
+            display: none;
+            position: absolute;
+            right: 200px;
+            top: 50px;
+            font-size: 2em;
+        }
+        /* Estilos para o botão de reiniciar */
+        #restart-button {
+            display: none;
+            position: absolute;
+            right: 230px;
+            top: 100px;
+            background-color: #00FF00; /* Botão recomeçar na cor verde */
+        }
+        /* Estilos para o logo do jogo */
+        #game-logo {
+            position: absolute;
+            top: 100px;
+            left: 200px;
+            width: 190px;
+            height: 190px;
+            background-image: url('logooficial.png '); 
+            background-size: cover;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-logo"></div> <!-- Logo do jogo -->
+    <div id="game-board"></div> <!-- Tabuleiro do jogo -->
+    <div id="score">Score: 0</div> <!-- Elemento de pontuação -->
+    <div id="end-game">Fim de jogo</div> <!-- Elemento de fim de jogo -->
+    <button id="restart-button">Recomeçar</button> <!-- Botão de reiniciar -->
+    <script>
+        /* O código do jogo começa aqui */
+        window.addEventListener('DOMContentLoaded', (event) => {
+            /* Seleciona os elementos necessários */
+            const gameBoard = document.querySelector('#game-board');
+            const scoreElement = document.querySelector('#score');
+            const endGameElement = document.querySelector('#end-game');
+            const restartButton = document.querySelector('#restart-button');
+            /* Define as cores dos blocos */
+            const colors = ['#39FF14', '#FFA500', '#0000FF', '#FF0000']; /* Cores dos blocos: verde neon, laranja, azul, vermelho */
+
+            /* Inicializa as variáveis do jogo */
+            let topPosition = 0;
+            let leftPosition = 0;
+            let speed = 500;
+            let score = 0;
+            let intervalId;
+
+            /* Função para criar um bloco */
+            function createBlock() {
+                const block = document.createElement('div');
+                block.classList.add('block');
+                block.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                block.style.top = `${topPosition}px`;
+                block.style.left = `${leftPosition}px`;
+                gameBoard.appendChild(block);
+                return block;
+            }
+
+            /* Cria o primeiro bloco */
+            let block = createBlock();
+
+            /* Função para iniciar o intervalo de queda dos blocos */
+            function startInterval() {
+                intervalId = setInterval(() => {
+                    if (topPosition < 570 && !collision(block, gameBoard)) {
+                        topPosition += 30;
+                        block.style.top = `${topPosition}px`;
+                    } else {
+                        if (topPosition === 0) {
+                            endGame();
+                        } else {
+                            checkForMatch();
+                            block = createBlock();
+                            topPosition = 0;
+                            speed = 500; // Reset the speed when a new block is created
+                        }
+                    }
+                }, speed);
+            }
+
+            /* Função para terminar o jogo */
+            function endGame() {
+                clearInterval(intervalId);
+                endGameElement.style.display = 'block';
+                restartButton.style.display = 'block';
+            }
+
+            /* Evento para reiniciar o jogo */
+            restartButton.addEventListener('click', () => {
+                window.location.reload();
+            });
+
+            /* Inicia o intervalo de queda dos blocos */
+            startInterval();
+
+            /* Eventos para mover os blocos e aumentar a velocidade de queda */
+            window.addEventListener('keydown', (event) => {
+                switch(event.key) {
+                    case 'ArrowLeft':
+                        if (leftPosition > 0) {
+                            leftPosition -= 30;
+                            block.style.left = `${leftPosition}px`;
+                        }
+                        break;
+                    case 'ArrowRight':
+                        if (leftPosition < 270) {
+                            leftPosition += 30;
+                            block.style.left = `${leftPosition}px`;
+                        }
+                        break;
+                    case 'ArrowDown':
+                        clearInterval(intervalId);
+                        speed = 50; // Increase the speed when the down arrow is pressed
+                        startInterval();
+                        break;
+                }
+            });
+
+            /* Evento para resetar a velocidade de queda */
+            window.addEventListener('keyup', (event) => {
+                if(event.key === 'ArrowDown') {
+                    clearInterval(intervalId);
+                    speed = 500; // Reset the speed when the down arrow is released
+                    startInterval();
+                }
+            });
+
+            /* Função para verificar colisões */
+            function collision(block, gameBoard) {
+                const existingBlocks = Array.from(gameBoard.querySelectorAll('.block'));
+                for(let i = 0; i < existingBlocks.length; i++) {
+                    if(existingBlocks[i] !== block && parseInt(existingBlocks[i].style.top) === topPosition + 30 && parseInt(existingBlocks[i].style.left) === leftPosition) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            /* Função para verificar correspondências */
+            function checkForMatch() {
+                const existingBlocks = Array.from(gameBoard.querySelectorAll('.block'));
+                existingBlocks.sort((a, b) => parseInt(a.style.top) - parseInt(b.style.top));
+
+                for(let i = 0; i < existingBlocks.length; i++) {
+                    // Check for horizontal match
+                    const horizontalMatch = existingBlocks.filter(block => parseInt(block.style.top) === parseInt(existingBlocks[i].style.top) && Math.abs(parseInt(block.style.left) - parseInt(existingBlocks[i].style.left)) <= 60 && block.style.backgroundColor === existingBlocks[i].style.backgroundColor);
+                    if(horizontalMatch.length >= 3 && horizontalMatch.every((block, index, blocks) => index === 0 || parseInt(block.style.left) === parseInt(blocks[index - 1].style.left) + 30)) {
+                        horizontalMatch.forEach(match => gameBoard.removeChild(match));
+                        score += horizontalMatch.length;
+                        scoreElement.textContent = `Score: ${score}`;
+                        dropBlocks(existingBlocks.filter(block => parseInt(block.style.top) < parseInt(existingBlocks[i].style.top)));
+                    }
+
+                    // Check for vertical match
+                    const verticalMatch = existingBlocks.filter(block => parseInt(block.style.left) === parseInt(existingBlocks[i].style.left) && Math.abs(parseInt(block.style.top) - parseInt(existingBlocks[i].style.top)) <= 60 && block.style.backgroundColor === existingBlocks[i].style.backgroundColor);
+                    if(verticalMatch.length >= 3 && verticalMatch.every((block, index, blocks) => index === 0 || parseInt(block.style.top) === parseInt(blocks[index - 1].style.top) + 30)) {
+                        verticalMatch.forEach(match => gameBoard.removeChild(match));
+                        score += verticalMatch.length;
+                        scoreElement.textContent = `Score: ${score}`;
+                        dropBlocks(existingBlocks.filter(block => parseInt(block.style.top) < parseInt(existingBlocks[i].style.top)));
+                    }
+                }
+            }
+
+            /* Função para mover os blocos para baixo */
+            function dropBlocks(blocks) {
+                blocks.forEach(block => {
+                    let top = parseInt(block.style.top);
+                    while (top < 570 && !collision(block, gameBoard)) {
+                        top += 30;
+                    }
+                    block.style.top = `${top}px`;
+                });
+            }
+        });
+    </script>
+</body>
+</html>
